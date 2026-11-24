@@ -15,9 +15,9 @@ from werkzeug.exceptions import Forbidden, Conflict, BadRequest
 from apptax.taxonomie.models import Taxref
 from geonature.core.gn_commons.models import TModules
 from geonature.core.gn_monitoring.models import (
-    corSiteModule,
-    corSiteArea,
-    corVisitObserver,
+    cor_site_module,
+    cor_site_area,
+    CorVisitObserver,
     TBaseVisits,
 )
 from geonature.core.gn_permissions import decorators as permissions
@@ -59,13 +59,13 @@ def get_sites():
             TBaseVisits, TBaseVisits.id_base_site == SiteInfos.id_base_site
         )
         .outerjoin(
-            corVisitObserver,
-            corVisitObserver.c.id_base_visit == TBaseVisits.id_base_visit,
+            CorVisitObserver.__table__,
+            CorVisitObserver.__table__.c.id_base_visit == TBaseVisits.id_base_visit,
         )
-        .outerjoin(User, User.id_role == corVisitObserver.c.id_role)
+        .outerjoin(User, User.id_role == CorVisitObserver.__table__.c.id_role)
         .outerjoin(Organisme, Organisme.id_organisme == User.id_organisme)
-        .outerjoin(corSiteArea, corSiteArea.c.id_base_site == SiteInfos.id_base_site)
-        .outerjoin(LAreas, LAreas.id_area == corSiteArea.c.id_area)
+        .outerjoin(cor_site_area, cor_site_area.c.id_base_site == SiteInfos.id_base_site)
+        .outerjoin(LAreas, LAreas.id_area == cor_site_area.c.id_area)
         .outerjoin(
             BibAreasTypes,
             and_(BibAreasTypes.id_type == LAreas.id_type, BibAreasTypes.type_code == "COM"),
@@ -160,9 +160,9 @@ def get_one_site(id_base_site):
         )
         .select_from(
             SiteInfos.__table__.outerjoin(
-                corSiteArea, corSiteArea.c.id_base_site == SiteInfos.id_base_site
+                cor_site_area, cor_site_area.c.id_base_site == SiteInfos.id_base_site
             )
-            .outerjoin(LAreas, LAreas.id_area == corSiteArea.c.id_area)
+            .outerjoin(LAreas, LAreas.id_area == cor_site_area.c.id_area)
             .join(
                 BibAreasTypes,
                 and_(BibAreasTypes.id_type == LAreas.id_type, BibAreasTypes.type_code == "COM"),
@@ -251,7 +251,7 @@ def edit_visit(id_visit=None):
     data = dict(request.get_json())
 
     # Check data
-    if "cor_visit_observer" not in data or len(data["cor_visit_observer"]) == 0:
+    if "CorVisitObserver.__table__" not in data or len(data["CorVisitObserver.__table__"]) == 0:
         msg = f"MandatoryObserver - At least one observer must be defined"
         raise BadRequest(msg)
 
@@ -280,8 +280,8 @@ def edit_visit(id_visit=None):
     if "cor_visit_grid" in data:
         visit_grids = data.pop("cor_visit_grid")
     observers_ids = []
-    if "cor_visit_observer" in data:
-        observers_ids = data.pop("cor_visit_observer")
+    if "CorVisitObserver.__table__" in data:
+        observers_ids = data.pop("CorVisitObserver.__table__")
 
     # Create visit object
     visit = Visit(**data)
@@ -362,9 +362,9 @@ def export_visits():
     if "organism" in parameters:
         query = (
             query.join(
-                corVisitObserver, corVisitObserver.c.id_base_visit == VisitsExport.id_base_visit
+                CorVisitObserver.__table__, CorVisitObserver.__table__.c.id_base_visit == VisitsExport.id_base_visit
             )
-            .join(User, User.id_role == corVisitObserver.c.id_role)
+            .join(User, User.id_role == CorVisitObserver.__table__.c.id_role)
             .where(User.id_organisme == parameters["organism"])
         )
 
@@ -459,9 +459,9 @@ def get_municipalities():
         db.session.scalars(
             select(LAreas)
         .join(BibAreasTypes, BibAreasTypes.id_type == LAreas.id_type)
-        .join(corSiteArea, LAreas.id_area == corSiteArea.c.id_area)
-        .join(corSiteModule, corSiteModule.c.id_base_site == corSiteArea.c.id_base_site)
-        .join(TModules, TModules.id_module == corSiteModule.c.id_module)
+        .join(cor_site_area, LAreas.id_area == cor_site_area.c.id_area)
+        .join(cor_site_module, cor_site_module.c.id_base_site == cor_site_area.c.id_base_site)
+        .join(TModules, TModules.id_module == cor_site_module.c.id_module)
         .where(TModules.module_code == blueprint.config["MODULE_CODE"])
         .where(BibAreasTypes.type_code == "COM")
         ).unique().all()
@@ -485,8 +485,8 @@ def get_organisms():
         db.session.scalars(
             select(Organisme)
         .join(User, User.id_organisme == Organisme.id_organisme)
-        .join(corVisitObserver, corVisitObserver.c.id_role == User.id_role)
-        .join(Visit, Visit.id_base_visit == corVisitObserver.c.id_base_visit)
+        .join(CorVisitObserver.__table__, CorVisitObserver.__table__.c.id_role == User.id_role)
+        .join(Visit, Visit.id_base_visit == CorVisitObserver.__table__.c.id_base_visit)
         ).unique().all()
     )
 

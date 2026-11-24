@@ -10,7 +10,7 @@ from apptax.taxonomie.models import Taxref
 from geonature.core.gn_monitoring.models import (
     TBaseSites,
     TBaseVisits,
-    corVisitObserver,
+    CorVisitObserver,
 )
 from ref_geo.models import LAreas
 from geonature.utils.env import db
@@ -155,10 +155,10 @@ class Visit(TBaseVisits, VisitAuthMixin):
     cor_visit_perturbation = db.relationship(VisitPerturbation, lazy="joined")
     observers = db.relationship(
         "User",
-        secondary=corVisitObserver,
-        primaryjoin=(corVisitObserver.c.id_base_visit == TBaseVisits.id_base_visit),
-        secondaryjoin=(corVisitObserver.c.id_role == User.id_role),
-        foreign_keys=[corVisitObserver.c.id_base_visit, corVisitObserver.c.id_role],
+        secondary=CorVisitObserver.__table__,
+        primaryjoin=(CorVisitObserver.__table__.c.id_base_visit == TBaseVisits.id_base_visit),
+        secondaryjoin=(CorVisitObserver.__table__.c.id_role == User.id_role),
+        foreign_keys=[CorVisitObserver.__table__.c.id_base_visit, CorVisitObserver.__table__.c.id_role],
     )
 
     def has_visit_for_this_year(self):
